@@ -142,8 +142,8 @@
   .card .meta{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:7px}
   .tag{font-family:"IBM Plex Mono";font-size:9.5px;letter-spacing:.08em;
     text-transform:uppercase;padding:2px 6px;border-radius:4px;font-weight:600}
-  .tag.col{display:inline-flex;align-items:center;gap:4px}
-  .tag.col i{width:7px;height:7px;border-radius:50%;display:inline-block}
+  .tag.lcol{display:inline-flex;align-items:center;gap:4px}
+  .tag.lcol i{width:7px;height:7px;border-radius:50%;display:inline-block}
   .stat{font-family:"IBM Plex Mono";font-size:10px;color:var(--muted)}
   .stat b{color:var(--text);font-weight:500}
   .card .note{font-family:"IBM Plex Sans Condensed";font-size:11px;color:var(--amber);
@@ -411,7 +411,7 @@ function card(p){
   if(p.time) stats.push(`<span class="stat"><b>${p.time}</b> min</span>`);
   const noteShown = p.note && p.note.toLowerCase()!==m.t.toLowerCase();
   const colTag = cl!=="white"
-    ? `<span class="tag col" style="color:${co.c};background:rgba(216,30,44,.14)"><i style="background:${co.sw}"></i>${co.t}</span>` : "";
+    ? `<span class="tag lcol" style="color:${co.c};background:rgba(216,30,44,.14)"><i style="background:${co.sw}"></i>${co.t}</span>` : "";
   el.innerHTML=`
     <div class="top">
       <span class="secdot" style="background:${SECCOLOR[p.section]||'#566472'}" title="${p.section}"></span>
