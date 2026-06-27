@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>BAe 146 Print Board &middot; airberlin livery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1419; --panel:#161e26; --panel2:#1d2730; --line:#28343f;
+    --text:#dfe7ee; --muted:#7e90a0; --dim:#566472;
+    --cyan:#48bccd; --amber:#e0a32e; --green:#5fbf7d; --red:#d9594c; --violet:#9b8cff; --blue:#5b9be0;
+    --ab-red:#d81e2c; --ab-white:#eef2f5;
+    --shadow:0 1px 0 rgba(255,255,255,.03), 0 2px 8px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"IBM Plex Sans Condensed",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 16px 40px}
+
+  /* ---- header / status strip ---- */
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px 22px;
+    border-bottom:1px solid var(--line);padding-bottom:14px}
+  .brand{display:flex;flex-direction:column;gap:2px}
+  .brand .kick{font-family:"IBM Plex Mono";font-size:11px;letter-spacing:.32em;
+    text-transform:uppercase;color:var(--cyan)}
+  .brand h1{margin:0;font-weight:700;font-size:25px;letter-spacing:.5px;line-height:1}
+  .brand .sub{font-size:12.5px;color:var(--muted);letter-spacing:.04em}
+  .gauges{display:flex;gap:26px;margin-left:auto;align-items:flex-end}
+  .gauge{display:flex;flex-direction:column;gap:5px;min-width:128px}
+  .gauge .lab{font-family:"IBM Plex Mono";font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between}
+  .gauge .lab b{color:var(--text);font-weight:600}
+  .bar{height:5px;background:var(--panel2);border-radius:3px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;border-radius:3px;transition:width .5s ease}
+  .bar.printed i{background:linear-gradient(90deg,#2f7f8c,var(--cyan))}
+  .bar.done i{background:linear-gradient(90deg,#3a8a55,var(--green))}
+  .bar.red i{background:linear-gradient(90deg,#8f1620,var(--ab-red))}
+
+  /* ---- controls ---- */
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 4px}
+  .controls.row2{margin:6px 0 4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .chips .grouplab{font-family:"IBM Plex Mono";font-size:10px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--dim);margin-right:2px}
+  .chip{font-family:"IBM Plex Mono";font-size:11px;letter-spacing:.06em;
+    background:var(--panel);border:1px solid var(--line);color:var(--muted);
+    padding:6px 11px;border-radius:20px;cursor:pointer;transition:.15s;white-space:nowrap}
+  .chip:hover{border-color:var(--dim);color:var(--text)}
+  .chip[aria-pressed="true"]{background:var(--cyan);border-color:var(--cyan);color:#06222a;font-weight:600}
+  .chip.cred[aria-pressed="true"]{background:var(--ab-red);border-color:var(--ab-red);color:#fff}
+  .chip .n{opacity:.6;margin-left:5px}
+  .chip .sw{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;
+    vertical-align:-1px;border:1px solid rgba(255,255,255,.25)}
+  .spacer{flex:1 1 auto}
+  .search{display:flex;align-items:center;gap:7px;background:var(--panel);
+    border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-width:150px}
+  .search input{background:none;border:0;color:var(--text);font-family:"IBM Plex Mono";
+    font-size:12px;width:100%;outline:none}
+  .search svg{flex:none;opacity:.5}
+  .ghost{background:none;border:1px solid var(--line);color:var(--muted);
+    font-family:"IBM Plex Mono";font-size:11px;padding:7px 11px;border-radius:8px;cursor:pointer}
+  .ghost:hover{color:var(--red);border-color:var(--red)}
+  .save{font-family:"IBM Plex Mono";font-size:10.5px;color:var(--dim);
+    letter-spacing:.1em;min-width:74px;text-align:right}
+  .save.ok{color:var(--green)} .save.warn{color:var(--amber)}
+
+  /* ---- livery guide ---- */
+  details.livery{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    margin:14px 0 4px;overflow:hidden}
+  details.livery>summary{cursor:pointer;list-style:none;padding:12px 14px;
+    display:flex;align-items:center;gap:10px;font-family:"IBM Plex Mono";font-size:12px;
+    letter-spacing:.04em;color:var(--text)}
+  details.livery>summary::-webkit-details-marker{display:none}
+  details.livery>summary .chev{margin-left:auto;color:var(--dim);transition:transform .2s}
+  details.livery[open]>summary .chev{transform:rotate(90deg)}
+  .livery .stripe{display:inline-flex;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+  .livery .stripe i{width:22px;height:12px;display:block}
+  .lbody{padding:2px 16px 16px;font-size:13px;line-height:1.5;color:var(--muted)}
+  .lbody h4{margin:14px 0 5px;color:var(--text);font-size:12px;font-family:"IBM Plex Mono";
+    letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+  .lbody ul{margin:5px 0;padding-left:18px}
+  .lbody li{margin:3px 0}
+  .lbody b{color:var(--text);font-weight:600}
+  .lbody .red{color:#ef7a83}
+  .lbody .warn{color:var(--amber)}
+  .lbody code{font-family:"IBM Plex Mono";font-size:12px;background:var(--panel2);
+    padding:1px 5px;border-radius:4px;color:var(--text)}
+
+  /* ---- legend ---- */
+  .legend{display:flex;flex-wrap:wrap;gap:5px 14px;margin:12px 0 16px;
+    font-family:"IBM Plex Mono";font-size:10.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+  /* ---- board ---- */
+  .board{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:860px){.board{grid-auto-flow:column;grid-auto-columns:80%;
+    grid-template-columns:none;overflow-x:auto;scroll-snap-type:x mandatory;
+    padding-bottom:8px;margin:0 -16px;padding-left:16px;padding-right:16px}
+    .col{scroll-snap-align:start}}
+  .col{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    display:flex;flex-direction:column;min-height:120px}
+  .col.drop{border-color:var(--cyan);background:#13212a}
+  .col-h{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:11px 13px;border-bottom:1px solid var(--line);position:sticky;top:0}
+  .col-h .t{font-family:"IBM Plex Mono";font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;display:flex;align-items:center;gap:7px}
+  .col-h .led{width:7px;height:7px;border-radius:50%}
+  .col-h .ct{font-family:"IBM Plex Mono";font-size:12px;color:var(--muted);
+    background:var(--panel2);padding:2px 8px;border-radius:10px}
+  .col[data-col="to_print"] .led{background:var(--dim)}
+  .col[data-col="printing"] .led{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+  .col[data-col="printed"]  .led{background:var(--cyan)}
+  .col[data-col="assembled"] .led{background:var(--green)}
+  .stack{padding:9px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .empty{color:var(--dim);font-family:"IBM Plex Mono";font-size:11px;
+    text-align:center;padding:18px 8px;line-height:1.5}
+
+  /* ---- card ---- */
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:9px;
+    padding:9px 10px 8px;box-shadow:var(--shadow);cursor:grab;position:relative}
+  .card:active{cursor:grabbing}
+  .card.drag{opacity:.4}
+  .card.cred{border-left:3px solid var(--ab-red)}
+  .card.ctrim{border-left:3px solid var(--amber)}
+  .card .top{display:flex;align-items:flex-start;gap:7px}
+  .card .secdot{width:8px;height:8px;border-radius:2px;margin-top:5px;flex:none}
+  .card .nm{font-family:"IBM Plex Mono";font-size:13px;font-weight:500;
+    line-height:1.25;letter-spacing:.01em;word-break:break-word;flex:1}
+  .swatch{flex:none;width:20px;height:20px;border-radius:50%;cursor:pointer;
+    border:1px solid rgba(255,255,255,.22);padding:0;transition:transform .12s;
+    box-shadow:inset 0 0 0 2px rgba(0,0,0,.18)}
+  .swatch:hover{transform:scale(1.14)}
+  .swatch.white{background:var(--ab-white)}
+  .swatch.red{background:var(--ab-red)}
+  .swatch.trim{background:linear-gradient(135deg,var(--ab-white) 0 50%,var(--ab-red) 50% 100%)}
+  .card .meta{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:7px}
+  .tag{font-family:"IBM Plex Mono";font-size:9.5px;letter-spacing:.08em;
+    text-transform:uppercase;padding:2px 6px;border-radius:4px;font-weight:600}
+  .tag.col{display:inline-flex;align-items:center;gap:4px}
+  .tag.col i{width:7px;height:7px;border-radius:50%;display:inline-block}
+  .stat{font-family:"IBM Plex Mono";font-size:10px;color:var(--muted)}
+  .stat b{color:var(--text);font-weight:500}
+  .card .note{font-family:"IBM Plex Sans Condensed";font-size:11px;color:var(--amber);
+    margin-top:6px;line-height:1.3;opacity:.9}
+  .mvrow{display:flex;justify-content:space-between;margin-top:8px;gap:6px}
+  .mv{flex:1;background:#0f171e;border:1px solid var(--line);color:var(--muted);
+    font-family:"IBM Plex Mono";font-size:11px;padding:4px;border-radius:6px;cursor:pointer}
+  .mv:hover:not(:disabled){color:var(--cyan);border-color:var(--cyan)}
+  .mv:disabled{opacity:.25;cursor:default}
+
+  .loading{padding:60px;text-align:center;color:var(--muted);font-family:"IBM Plex Mono";font-size:13px}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <span class="kick">Build Status &middot; LW-PLA &middot; airberlin</span>
+      <h1>BAe 146 &mdash; Print Board</h1>
+      <span class="sub">1800&thinsp;mm wingspan &middot; 1/15 scale &middot; 111 parts &middot; red&nbsp;/&nbsp;white livery</span>
+    </div>
+    <div class="gauges">
+      <div class="gauge">
+        <div class="lab"><span>Off the bed</span><b id="g-printed">0 / 111</b></div>
+        <div class="bar printed"><i id="bar-printed"></i></div>
+      </div>
+      <div class="gauge">
+        <div class="lab"><span>Assembled</span><b id="g-done">0 / 111</b></div>
+        <div class="bar done"><i id="bar-done"></i></div>
+      </div>
+      <div class="gauge">
+        <div class="lab"><span>Red filament</span><b id="g-red">0 / 111</b></div>
+        <div class="bar red"><i id="bar-red"></i></div>
+      </div>
+    </div>
+  </header>
+
+  <details class="livery" id="livery">
+    <summary>
+      <span class="stripe"><i style="background:var(--ab-white)"></i><i style="background:var(--ab-red)"></i></span>
+      airberlin livery &mdash; which parts to print in <b>&nbsp;red&nbsp;</b> LW-PLA
+      <span class="chev">&#9654;</span>
+    </summary>
+    <div class="lbody">
+      <p>The reference photo shows the classic <b>airberlin red / white</b> scheme: a white airframe
+      with a fully <span class="red">red vertical fin</span> and a red sweep wrapping the rear
+      fuselage / tailcone. Click any card's colour swatch to cycle
+      <b>white &rarr; red &rarr; two-tone</b> and tune it to your own plan &mdash; choices are saved.</p>
+
+      <h4>Print in RED LW-PLA</h4>
+      <ul>
+        <li><b>Vertical fin (whole Rudder section)</b> &mdash; <code>R Main 1/2</code>,
+            <code>R Top top front/back</code>, <code>R Top down front/back</code>,
+            <code>Rudder 1/2</code>. The fin is solid red top-to-bottom (white logo applied as a decal).</li>
+        <li><b>Rear fuselage / tailcone</b> &mdash; <code>Fuse 9</code>, <code>Fuse 9 Corner</code>,
+            <code>Fuse 10</code>, <code>Fuse 10 Corner</code>, <code>Fuse 11</code>, where the red sweeps
+            up to meet the fin. <span class="warn">Verify the exact segment split against the manual / photo</span>
+            &mdash; the numbering may shift the boundary by a section.</li>
+      </ul>
+
+      <h4>Two-tone &mdash; white base + red (mark amber)</h4>
+      <ul>
+        <li><b>Sweep transition</b> &mdash; <code>Fuse 8</code> sits on the diagonal where white meets red.
+            A single-colour print can't cleanly capture the slash, so plan a <b>colour-change at a set
+            Z height</b>, masking + paint, or a vinyl decal.</li>
+        <li><b>Engine nacelle exhaust lips</b> (optional) &mdash; if you want the small red accent at the
+            rear of each gondola, treat <code>EDF 2 L/R</code> as two-tone. Left white by default.</li>
+      </ul>
+
+      <h4>Stays WHITE</h4>
+      <ul>
+        <li>Nose &amp; forward/mid fuselage, <b>wings &amp; flaps/ailerons</b>, <b>horizontal tailplane
+            (Elevator section)</b>, and the engine gondolas.</li>
+        <li>The red <b>&ldquo;airberlin&rdquo; titles</b> on the forward fuselage and wing are decals /
+            paint on white parts &mdash; not separate prints.</li>
+      </ul>
+      <p style="margin-top:12px;font-size:12px;color:var(--dim)">Defaults are a starting suggestion based on the
+      photo, not gospel &mdash; adjust per part with the swatches. <code>Elev Bolt</code> and other hidden
+      hardware are left white (colour irrelevant).</p>
+    </div>
+  </details>
+
+  <div class="controls">
+    <div class="chips" id="filters"></div>
+    <div class="spacer"></div>
+    <div class="search">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="search" placeholder="find part&hellip;" autocomplete="off" spellcheck="false"/>
+    </div>
+    <span class="save" id="save">&nbsp;</span>
+    <button class="ghost" id="reset">Reset</button>
+  </div>
+
+  <div class="controls row2">
+    <div class="chips" id="colfilters"></div>
+  </div>
+
+  <div class="legend" id="legend"></div>
+  <div id="root"><div class="loading">Loading board&hellip;</div></div>
+</div>
+
+<script>
+const SEED = [{"id":"elev-1-l-stl","name":"Elev 1 L","section":"Elevator","size":143.7,"mode":"pla","note":"","time":null,"col":"to_print"},{"id":"elev-1-r-stl","name":"Elev 1 R","section":"Elevator","size":104.9,"mode":"pla","note":"","time":null,"col":"to_print"},{"id":"elev-2-l-stl","name":"Elev 2 L","section":"Elevator","size":300.5,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"elev-2-r-stl","name":"Elev 2 R","section":"Elevator","size":300.5,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"elev-3-l-stl","name":"Elev 3 L","section":"Elevator","size":248.4,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"elev-3-r-stl","name":"Elev 3 R","section":"Elevator","size":248.4,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"elev-axis-tool-stl","name":"Elev Axis Tool","section":"Elevator","size":42.8,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"elev-main-1-l-stl","name":"Elev Main 1 L","section":"Elevator","size":196.8,"mode":"pla","note":"","time":null,"col":"to_print"},{"id":"elev-main-1-r-stl","name":"Elev Main 1 R","section":"Elevator","size":195.3,"mode":"pla","note":"","time":null,"col":"to_print"},{"id":"elev-main-2-l-stl","name":"Elev Main 2 L","section":"Elevator","size":163.0,"mode":"pla","note":"","time":null,"col":"to_print"},{"id":"elev-main-2-r-stl","name":"Elev Main 2 R","section":"Elevator","size":161.5,"mode":"pla","note":"","time":null,"col":"to_print"},{"id":"elev-main-tip-l-stl","name":"Elev Main Tip L","section":"Elevator","size":419.3,"mode":"top","note":"2 Top Layers","time":null,"col":"to_print"},{"id":"elev-main-tip-r-stl","name":"Elev Main Tip R","section":"Elevator","size":419.3,"mode":"top","note":"3 Top Layers","time":null,"col":"to_print"},{"id":"elev-middle-cover-stl","name":"Elev Middle Cover","section":"Elevator","size":42.4,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"elev-middle-stl","name":"Elev Middle","section":"Elevator","size":297.5,"mode":"novase","note":"poor print","time":null,"col":"to_print"},{"id":"elev-tip-l-stl","name":"Elev Tip L","section":"Elevator","size":335.3,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"elev-tip-r-stl","name":"Elev Tip R","section":"Elevator","size":336.2,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"battery-mount-stl","name":"Battery Mount","section":"Fuse","size":121.8,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"fuse-1-stl","name":"Fuse 1","section":"Fuse","size":6625.1,"mode":"vase","note":"","time":null,"col":"printed"},{"id":"fuse-10-corner-stl","name":"Fuse 10 Corner","section":"Fuse","size":89.4,"mode":"vase","note":"","time":3,"col":"to_print"},{"id":"fuse-10-stl","name":"Fuse 10","section":"Fuse","size":831.6,"mode":"vase","note":"","time":47,"col":"to_print"},{"id":"fuse-11-stl","name":"Fuse 11","section":"Fuse","size":363.8,"mode":"walls","note":"2 walls","time":4,"col":"to_print"},{"id":"fuse-2-cover-1-stl","name":"Fuse 2 Cover 1","section":"Fuse","size":431.7,"mode":"novase","note":"Doesn’t Slice Correctly in Vase mode","time":null,"col":"to_print"},{"id":"fuse-2-cover-2-stl","name":"Fuse 2 Cover 2","section":"Fuse","size":326.0,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"fuse-2-stl","name":"Fuse 2","section":"Fuse","size":1236.0,"mode":"vase","note":"","time":null,"col":"printed"},{"id":"fuse-3-1-1-stl","name":"Fuse 3-1-1","section":"Fuse","size":248.4,"mode":"vase","note":"","time":null,"col":"printed"},{"id":"fuse-3-2-stl","name":"Fuse 3-2","section":"Fuse","size":251.6,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"fuse-4-stl","name":"Fuse 4","section":"Fuse","size":698.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"fuse-5-stl","name":"Fuse 5","section":"Fuse","size":426.8,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"fuse-6-stl","name":"Fuse 6","section":"Fuse","size":1058.6,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"fuse-7-stl","name":"Fuse 7","section":"Fuse","size":889.5,"mode":"vase","note":"","time":53,"col":"to_print"},{"id":"fuse-8-stl","name":"Fuse 8","section":"Fuse","size":549.5,"mode":"vase","note":"","time":78,"col":"to_print"},{"id":"fuse-9-corner-stl","name":"Fuse 9 Corner","section":"Fuse","size":111.6,"mode":"vase","note":"","time":4,"col":"to_print"},{"id":"fuse-9-stl","name":"Fuse 9","section":"Fuse","size":1992.8,"mode":"vase","note":"","time":63,"col":"to_print"},{"id":"fuse-nose-stl","name":"Fuse Nose","section":"Fuse","size":924.8,"mode":"vase","note":"","time":null,"col":"printed"},{"id":"lock-stl","name":"Lock","section":"Fuse","size":94.2,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"main-gear-mount-stl","name":"Main Gear Mount","section":"Fuse","size":136.2,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"nose-gear-mount-stl","name":"Nose Gear Mount","section":"Fuse","size":81.2,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"fuse-3-1-2-stl","name":"Fuse 3-1-2","section":"Fuse","size":256.8,"mode":"vase","note":"","time":null,"col":"printed"},{"id":"wing-screw-connection-stl","name":"Wing Screw Connection","section":"Fuse","size":150.1,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"edf-1-l-bottom-duct-stl","name":"EDF 1 L Bottom Duct","section":"Gondola","size":293.2,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"edf-1-l-bottom-stl","name":"EDF 1 L Bottom","section":"Gondola","size":25194.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"edf-1-l-top-duct-stl","name":"EDF 1 L Top Duct","section":"Gondola","size":315.9,"mode":"novase","note":"","time":null,"col":"to_print"},{"id":"edf-1-l-top-stl","name":"EDF 1 L Top","section":"Gondola","size":864.5,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"edf-1-r-bottom-duct-stl","name":"EDF 1 R Bottom Duct","section":"Gondola","size":293.2,"mode":"novase","note":"","time":null,"col":"to_print"},{"id":"edf-1-r-bottom-stl","name":"EDF 1 R Bottom","section":"Gondola","size":4683.5,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"edf-1-r-top-duct-stl","name":"EDF 1 R Top duct","section":"Gondola","size":315.9,"mode":"novase","note":"","time":null,"col":"to_print"},{"id":"edf-1-r-top-stl","name":"EDF 1 R Top","section":"Gondola","size":864.5,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"edf-2-duct-r-stl","name":"EDF 2 Duct R","section":"Gondola","size":444.3,"mode":"novase","note":"","time":null,"col":"to_print"},{"id":"edf-2-l-duct-stl","name":"EDF 2 L Duct","section":"Gondola","size":444.3,"mode":"novase","note":"","time":null,"col":"to_print"},{"id":"edf-2-l-stl","name":"EDF 2 L","section":"Gondola","size":843.0,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"edf-2-r-stl","name":"EDF 2 R","section":"Gondola","size":843.0,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"gondola-l1-1-stl","name":"Gondola L1-1","section":"Gondola","size":436.2,"mode":"novase","note":"","time":null,"col":"to_print"},{"id":"gondola-l1-2-stl","name":"Gondola L1-2","section":"Gondola","size":177.6,"mode":"novase","note":"","time":null,"col":"to_print"},{"id":"gondola-l1-3-stl","name":"Gondola L1-3","section":"Gondola","size":184.5,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"gondola-l2-1-stl","name":"Gondola L2-1","section":"Gondola","size":337.1,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"gondola-l2-2-stl","name":"Gondola L2-2","section":"Gondola","size":233.8,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"gondola-l2-3-stl","name":"Gondola L2-3","section":"Gondola","size":267.8,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"gondola-l3-1-stl","name":"Gondola L3-1","section":"Gondola","size":131.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"gondola-l3-2-stl","name":"Gondola L3-2","section":"Gondola","size":287.3,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"gondola-r1-1-stl","name":"Gondola R1-1","section":"Gondola","size":435.6,"mode":"novase","note":"","time":null,"col":"to_print"},{"id":"gondola-r1-2-stl","name":"Gondola R1-2","section":"Gondola","size":177.9,"mode":"novase","note":"","time":null,"col":"to_print"},{"id":"gondola-r1-3-stl","name":"Gondola R1-3","section":"Gondola","size":178.4,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"gondola-r2-1-stl","name":"Gondola R2-1","section":"Gondola","size":337.1,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"gondola-r2-2-stl","name":"Gondola R2-2","section":"Gondola","size":233.8,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"gondola-r2-3-stl","name":"Gondola R2-3","section":"Gondola","size":260.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"gondola-r3-1-stl","name":"Gondola R3-1","section":"Gondola","size":131.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"gondola-r3-2-stl","name":"Gondola R3-2","section":"Gondola","size":281.9,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"elev-bolt-stl","name":"Elev Bolt","section":"Rudder","size":43.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"r-main-1-stl","name":"R Main 1","section":"Rudder","size":685.0,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"r-main-2-stl","name":"R Main 2","section":"Rudder","size":951.8,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"r-top-down-back-stl","name":"R Top down back","section":"Rudder","size":288.9,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"r-top-down-front-stl","name":"R Top down front","section":"Rudder","size":134.8,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"r-top-top-back-stl","name":"R Top top back","section":"Rudder","size":204.6,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"r-top-top-front-stl","name":"R Top top front","section":"Rudder","size":360.8,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"rudder-1-stl","name":"Rudder 1","section":"Rudder","size":265.2,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"rudder-2-stl","name":"Rudder 2","section":"Rudder","size":417.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"ail-cover-r-stl","name":"AIL Cover R","section":"Wing","size":46.3,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"ail-l-cover-stl","name":"AIL L Cover","section":"Wing","size":46.2,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"ail-l1-stl","name":"AIL L1","section":"Wing","size":323.6,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"ail-l2-stl","name":"AIL L2","section":"Wing","size":688.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"ail-l3-stl","name":"AIL L3","section":"Wing","size":446.1,"mode":"top","note":"2 top layers","time":null,"col":"to_print"},{"id":"ail-mount-1-l-stl","name":"AIL Mount 1 L","section":"Wing","size":37.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"ail-mount-2-l-stl","name":"AIL Mount 2 L","section":"Wing","size":25.1,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"ail-mount-r1-stl","name":"AIL Mount R1","section":"Wing","size":25.1,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"ail-mount-r2-stl","name":"AIL Mount R2","section":"Wing","size":37.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"ail-r1-stl","name":"AIL R1","section":"Wing","size":323.6,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"ail-r2-stl","name":"AIL R2","section":"Wing","size":688.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"ail-r3-stl","name":"AIL R3","section":"Wing","size":446.0,"mode":"top","note":"2 top layers","time":null,"col":"to_print"},{"id":"flap-l1-stl","name":"Flap L1","section":"Wing","size":453.2,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"flap-l2-stl","name":"Flap L2","section":"Wing","size":693.6,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"flap-l3-stl","name":"Flap L3","section":"Wing","size":623.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"flap-l4-stl","name":"Flap L4","section":"Wing","size":663.6,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"flap-r1-stl","name":"Flap R1","section":"Wing","size":453.2,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"flap-r2-stl","name":"Flap R2","section":"Wing","size":693.6,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"flap-r3-stl","name":"Flap R3","section":"Wing","size":623.7,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"flap-r4-stl","name":"Flap R4","section":"Wing","size":663.6,"mode":"vase","note":"","time":null,"col":"to_print"},{"id":"wing-1-1l-stl","name":"Wing 1-1L","section":"Wing","size":392.9,"mode":"novase","note":"","time":100,"col":"to_print"},{"id":"wing-1-1r-stl","name":"Wing 1-1R","section":"Wing","size":392.7,"mode":"novase","note":"","time":100,"col":"to_print"},{"id":"wing-1-2l-stl","name":"Wing 1-2L","section":"Wing","size":552.7,"mode":"novase","note":"","time":80,"col":"to_print"},{"id":"wing-1-2r-stl","name":"Wing 1-2R","section":"Wing","size":596.9,"mode":"novase","note":"","time":80,"col":"to_print"},{"id":"wing-2l-stl","name":"Wing 2L","section":"Wing","size":707.1,"mode":"vase","note":"","time":143,"col":"to_print"},{"id":"wing-2r-stl","name":"Wing 2R","section":"Wing","size":705.1,"mode":"vase","note":"","time":143,"col":"to_print"},{"id":"wing-3l-stl","name":"Wing 3L","section":"Wing","size":524.5,"mode":"vase","note":"","time":107,"col":"to_print"},{"id":"wing-3r-stl","name":"Wing 3R","section":"Wing","size":520.4,"mode":"vase","note":"","time":107,"col":"to_print"},{"id":"wing-4l-stl","name":"Wing 4L","section":"Wing","size":542.8,"mode":"vase","note":"","time":76,"col":"to_print"},{"id":"wing-4r-stl","name":"Wing 4R","section":"Wing","size":536.9,"mode":"vase","note":"","time":76,"col":"to_print"},{"id":"wing-5l-stl","name":"Wing 5L","section":"Wing","size":330.6,"mode":"vase","note":"","time":55,"col":"to_print"},{"id":"wing-5r-stl","name":"Wing 5R","section":"Wing","size":330.6,"mode":"vase","note":"","time":55,"col":"to_print"},{"id":"wing-tip-l-stl","name":"Wing Tip L","section":"Wing","size":774.2,"mode":"top","note":"2 top layers","time":null,"col":"to_print"},{"id":"wing-tip-r-stl","name":"Wing Tip R","section":"Wing","size":794.9,"mode":"top","note":"2 top layers","time":null,"col":"to_print"}];
+
+// ---- airberlin livery: default colour per part (override by clicking a swatch) ----
+// red  = print in red LW-PLA   |   trim = white base + red colour-change / decal
+const LIVERY = {
+  // vertical fin (whole rudder section, minus hidden bolt)
+  "r-main-1-stl":"red","r-main-2-stl":"red",
+  "r-top-top-front-stl":"red","r-top-top-back-stl":"red",
+  "r-top-down-front-stl":"red","r-top-down-back-stl":"red",
+  "rudder-1-stl":"red","rudder-2-stl":"red",
+  // rear fuselage / tailcone red wrap
+  "fuse-9-stl":"red","fuse-9-corner-stl":"red",
+  "fuse-10-stl":"red","fuse-10-corner-stl":"red","fuse-11-stl":"red",
+  // diagonal white/red sweep transition
+  "fuse-8-stl":"trim"
+};
+
+const COLS = [
+  {k:"to_print",  t:"To Print"},
+  {k:"printing",  t:"Printing"},
+  {k:"printed",   t:"Printed"},
+  {k:"assembled", t:"Assembled"}
+];
+const SECTIONS = ["Fuse","Wing","Gondola","Elevator","Rudder"];
+const SECCOLOR = {Fuse:"#48bccd",Wing:"#9b8cff",Gondola:"#e0a32e",Elevator:"#5fbf7d",Rudder:"#d9594c"};
+const MODES = {
+  vase:  {t:"vase",       c:"#566472", bg:"rgba(86,100,114,.18)"},
+  pla:   {t:"PLA",        c:"#9b8cff", bg:"rgba(155,140,255,.16)"},
+  novase:{t:"no vase",    c:"#e0a32e", bg:"rgba(224,163,46,.16)"},
+  top:   {t:"top layers", c:"#48bccd", bg:"rgba(72,188,205,.16)"},
+  walls: {t:"walls",      c:"#5b9be0", bg:"rgba(91,155,224,.16)"}
+};
+const COLOURS = {
+  white:{t:"white", c:"#cdd6dd", sw:"#eef2f5"},
+  red:  {t:"red",   c:"#ef7a83", sw:"#d81e2c"},
+  trim: {t:"two-tone", c:"#e0a32e", sw:"#d81e2c"}
+};
+const COLOUR_ORDER = ["white","red","trim"];
+
+const KEY="board-state";
+let state={};            // id -> colKey  (column override of seed)
+let colourState={};      // id -> colour  (livery override of LIVERY/default)
+let filter="all";
+let colourFilter="all";
+let query="";
+let backend="memory";    // "artifact" | "local" | "memory"
+
+function colOf(p){ return state[p.id] || p.col; }
+function baseColour(p){ return LIVERY[p.id] || "white"; }
+function colourOf(p){ return colourState[p.id] || baseColour(p); }
+
+// Can this browser actually write localStorage? (blocked in sandboxed iframes)
+function hasLocal(){
+  try{ localStorage.setItem("__probe","1"); localStorage.removeItem("__probe"); return true; }
+  catch(e){ return false; }
+}
+function backendLabel(){
+  return backend==="local" ? "browser storage"
+       : backend==="artifact" ? "Claude storage"
+       : "memory only (won't persist)";
+}
+
+function parseState(raw){
+  try{
+    const o=JSON.parse(raw);
+    return {cols:o.cols||{}, colours:o.colours||{}};
+  }catch(e){ return {cols:{},colours:{}}; }
+}
+
+async function load(){
+  // 1) Claude artifact key-value store
+  if(window.storage && window.storage.get){
+    backend="artifact";
+    try{
+      const r = await window.storage.get(KEY);
+      if(r && r.value){ const o=parseState(r.value); state=o.cols; colourState=o.colours; }
+    }catch(e){ /* missing key throws — start fresh */ }
+    finishLoad(); return;
+  }
+  // 2) Browser localStorage
+  if(hasLocal()){
+    backend="local";
+    const raw=localStorage.getItem(KEY);
+    if(raw){ const o=parseState(raw); state=o.cols; colourState=o.colours; }
+    finishLoad(); return;
+  }
+  // 3) In-memory only
+  backend="memory";
+  finishLoad();
+}
+function finishLoad(){
+  const el=document.getElementById("save");
+  if(el){ el.title="Saving to: "+backendLabel();
+    if(backend==="memory"){ el.textContent="memory only"; el.className="save warn"; } }
+  render();
+}
+
+async function save(){
+  const el=document.getElementById("save");
+  const payload=JSON.stringify({v:2,cols:state,colours:colourState});
+  try{
+    if(backend==="artifact"){ await window.storage.set(KEY,payload); }
+    else if(backend==="local"){ localStorage.setItem(KEY,payload); }
+    else { throw new Error("memory"); }
+    flashSave(el,"saved","save ok");
+  }catch(e){
+    if(backend==="artifact" && hasLocal()){
+      try{ localStorage.setItem(KEY,payload); backend="local";
+           el.title="Saving to: "+backendLabel(); flashSave(el,"saved","save ok"); return; }catch(_){}
+    }
+    el.textContent="not saved"; el.className="save warn";
+  }
+}
+function flashSave(el,txt,cls){
+  if(!el) return;
+  el.textContent=txt; el.className=cls;
+  setTimeout(()=>{el.textContent=" ";el.className="save";el.title="Saving to: "+backendLabel();},1400);
+}
+
+function move(id, dir){
+  const p=SEED.find(x=>x.id===id); if(!p)return;
+  const cur=COLS.findIndex(c=>c.k===colOf(p));
+  const next=Math.min(COLS.length-1,Math.max(0,cur+dir));
+  state[id]=COLS[next].k; save(); render();
+}
+function setCol(id,k){ state[id]=k; save(); render(); }
+function cycleColour(id){
+  const p=SEED.find(x=>x.id===id); if(!p)return;
+  const cur=colourOf(p);
+  const next=COLOUR_ORDER[(COLOUR_ORDER.indexOf(cur)+1)%COLOUR_ORDER.length];
+  if(next===baseColour(p)) delete colourState[id]; else colourState[id]=next;
+  save(); render();
+}
+
+function counts(){
+  const byCol={}; COLS.forEach(c=>byCol[c.k]=0);
+  let printed=0, done=0, red=0, trim=0, white=0;
+  SEED.forEach(p=>{ const c=colOf(p); byCol[c]++;
+    if(c==="printed"||c==="assembled")printed++;
+    if(c==="assembled")done++;
+    const cl=colourOf(p);
+    if(cl==="red")red++; else if(cl==="trim")trim++; else white++; });
+  return {byCol,printed,done,red,trim,white};
+}
+
+function visible(p){
+  if(filter!=="all" && p.section!==filter) return false;
+  if(colourFilter!=="all" && colourOf(p)!==colourFilter) return false;
+  if(query && !(p.name.toLowerCase().includes(query) || p.section.toLowerCase().includes(query))) return false;
+  return true;
+}
+
+function card(p){
+  const ci=COLS.findIndex(c=>c.k===colOf(p));
+  const m=MODES[p.mode]||MODES.vase;
+  const cl=colourOf(p); const co=COLOURS[cl];
+  const el=document.createElement("div");
+  el.className="card"+(cl==="red"?" cred":cl==="trim"?" ctrim":""); el.draggable=true; el.dataset.id=p.id;
+  const stats=[];
+  if(p.size) stats.push(`<span class="stat"><b>${p.size}</b> KB</span>`);
+  if(p.time) stats.push(`<span class="stat"><b>${p.time}</b> min</span>`);
+  const noteShown = p.note && p.note.toLowerCase()!==m.t.toLowerCase();
+  const colTag = cl!=="white"
+    ? `<span class="tag col" style="color:${co.c};background:rgba(216,30,44,.14)"><i style="background:${co.sw}"></i>${co.t}</span>` : "";
+  el.innerHTML=`
+    <div class="top">
+      <span class="secdot" style="background:${SECCOLOR[p.section]||'#566472'}" title="${p.section}"></span>
+      <span class="nm">${p.name}</span>
+      <button class="swatch ${cl}" title="Livery: ${co.t} — click to change" aria-label="Livery colour: ${co.t}, click to change"></button>
+    </div>
+    <div class="meta">
+      <span class="tag" style="color:${m.c};background:${m.bg}">${m.t}</span>
+      ${colTag}
+      ${stats.join("")}
+    </div>
+    ${noteShown?`<div class="note">&#9888; ${p.note}</div>`:""}
+    <div class="mvrow">
+      <button class="mv" data-dir="-1" ${ci===0?"disabled":""} aria-label="Move left">&#9664;</button>
+      <button class="mv" data-dir="1" ${ci===COLS.length-1?"disabled":""} aria-label="Move right">&#9654;</button>
+    </div>`;
+  el.querySelector(".swatch").onclick=e=>{e.stopPropagation();cycleColour(p.id);};
+  el.querySelectorAll(".mv").forEach(b=>b.onclick=e=>{e.stopPropagation();move(p.id,+b.dataset.dir);});
+  el.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",p.id);el.classList.add("drag");});
+  el.addEventListener("dragend",()=>el.classList.remove("drag"));
+  return el;
+}
+
+function render(){
+  const c=counts();
+  // gauges
+  document.getElementById("g-printed").textContent=`${c.printed} / 111`;
+  document.getElementById("g-done").textContent=`${c.done} / 111`;
+  document.getElementById("g-red").textContent=`${c.red+c.trim} / 111`;
+  document.getElementById("bar-printed").style.width=(c.printed/111*100)+"%";
+  document.getElementById("bar-done").style.width=(c.done/111*100)+"%";
+  document.getElementById("bar-red").style.width=((c.red+c.trim)/111*100)+"%";
+
+  // section filters
+  const f=document.getElementById("filters");
+  if(!f.dataset.built){
+    const mk=(k,label,n)=>`<button class="chip" data-f="${k}" aria-pressed="${k==='all'}">${label}<span class="n">${n}</span></button>`;
+    f.innerHTML='<span class="grouplab">Section</span>'+mk("all","All",SEED.length)+SECTIONS.map(s=>mk(s,s,SEED.filter(p=>p.section===s).length)).join("");
+    f.querySelectorAll(".chip").forEach(ch=>ch.onclick=()=>{
+      filter=ch.dataset.f;
+      f.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===ch));
+      render();
+    });
+    f.dataset.built="1";
+    // colour filters
+    const cf=document.getElementById("colfilters");
+    const cmk=(k,label,sw)=>`<button class="chip cred" data-cf="${k}" aria-pressed="${k==='all'}">${sw?`<span class="sw" style="background:${sw}"></span>`:""}${label}<span class="n" data-cn="${k}"></span></button>`;
+    cf.innerHTML='<span class="grouplab">Livery</span>'+cmk("all","All",null)+cmk("white","White","#eef2f5")+cmk("red","Red","#d81e2c")+cmk("trim","Two-tone","linear-gradient(135deg,#eef2f5 0 50%,#d81e2c 50% 100%)");
+    cf.querySelectorAll(".chip").forEach(ch=>ch.onclick=()=>{
+      colourFilter=ch.dataset.cf;
+      cf.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===ch));
+      render();
+    });
+    // legend
+    const lg=document.getElementById("legend");
+    lg.innerHTML='<span style="color:var(--dim)">PRINT MODE:</span>'+
+      Object.values(MODES).map(m=>`<span><i class="dot" style="background:${m.c}"></i>${m.t}</span>`).join("")+
+      '<span style="color:var(--dim);margin-left:6px">SECTION:</span>'+
+      SECTIONS.map(s=>`<span><i class="dot" style="background:${SECCOLOR[s]}"></i>${s}</span>`).join("");
+  }
+  // live colour-filter counts
+  document.querySelectorAll('[data-cn]').forEach(n=>{
+    const k=n.getAttribute('data-cn');
+    n.textContent = k==='all'?SEED.length : k==='red'?c.red : k==='trim'?c.trim : c.white;
+  });
+
+  const root=document.getElementById("root");
+  const board=document.createElement("div"); board.className="board";
+  COLS.forEach(col=>{
+    const items=SEED.filter(p=>colOf(p)===col.k && visible(p));
+    const colEl=document.createElement("div");
+    colEl.className="col"; colEl.dataset.col=col.k;
+    colEl.innerHTML=`<div class="col-h"><span class="t"><span class="led"></span>${col.t}</span><span class="ct">${c.byCol[col.k]}</span></div>`;
+    const stack=document.createElement("div"); stack.className="stack";
+    if(items.length===0){
+      const e=document.createElement("div"); e.className="empty";
+      e.textContent = c.byCol[col.k]===0 ? "—" : "none match filter";
+      stack.appendChild(e);
+    } else items.forEach(p=>stack.appendChild(card(p)));
+    colEl.appendChild(stack);
+    colEl.addEventListener("dragover",e=>{e.preventDefault();colEl.classList.add("drop");});
+    colEl.addEventListener("dragleave",()=>colEl.classList.remove("drop"));
+    colEl.addEventListener("drop",e=>{e.preventDefault();colEl.classList.remove("drop");
+      const id=e.dataTransfer.getData("text/plain"); if(id)setCol(id,col.k);});
+    board.appendChild(colEl);
+  });
+  root.innerHTML=""; root.appendChild(board);
+}
+
+document.getElementById("search").addEventListener("input",e=>{query=e.target.value.trim().toLowerCase();render();});
+document.getElementById("reset").addEventListener("click",()=>{
+  if(confirm("Reset every part back to its starting column and livery colour? This clears your progress."))
+    {state={};colourState={};save();render();}
+});
+
+load();
+</script>
+</body>
+</html>
